@@ -1,8 +1,6 @@
-// src/pages/Login.js
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import '../styles/main.css';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -11,7 +9,6 @@ const Login = () => {
   const { login, isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
-  // Se já estiver autenticado, redireciona para o dashboard
   useEffect(() => {
     if (isAuthenticated) {
       navigate('/');

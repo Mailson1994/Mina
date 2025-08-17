@@ -1,10 +1,9 @@
-// src/context/SalesContext.js
 import { createContext, useState, useEffect } from 'react';
 
 export const SalesContext = createContext();
 
 export const SalesProvider = ({ children }) => {
-  // Carregar dados do localStorage ao iniciar
+  // Estados e inicialização
   const [sales, setSales] = useState(() => {
     const savedSales = localStorage.getItem('sales');
     return savedSales ? JSON.parse(savedSales) : [];
@@ -24,17 +23,23 @@ export const SalesProvider = ({ children }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Salvar produtos no localStorage quando mudar
+  // Persistência no localStorage
   useEffect(() => {
     localStorage.setItem('products', JSON.stringify(products));
   }, [products]);
 
-  // Salvar vendas no localStorage quando mudar
   useEffect(() => {
     localStorage.setItem('sales', JSON.stringify(sales));
   }, [sales]);
 
-  // Adicionar item ao carrinho
+  // Adiciona novo produto
+  const addProduct = (newProduct) => {
+    const id = Date.now();
+    const productWithId = { ...newProduct, id };
+    setProducts((prev) => [...prev, productWithId]);
+  };
+
+  // Adiciona item ao carrinho
   const addToCart = (product, quantity) => {
     if (quantity <= 0) return;
 
@@ -47,7 +52,6 @@ export const SalesProvider = ({ children }) => {
 
     if (existingItemIndex !== -1) {
       const newTotalQuantity = cart[existingItemIndex].quantity + quantity;
-
       if (newTotalQuantity > product.stock) {
         setError(`Quantidade solicitada excede o estoque disponível de ${product.name}`);
         return;
@@ -63,12 +67,12 @@ export const SalesProvider = ({ children }) => {
     setError(null);
   };
 
-  // Remover item do carrinho
+  // Remove item do carrinho
   const removeFromCart = (productId) => {
     setCart(cart.filter(item => item.product.id !== productId));
   };
 
-  // Atualizar quantidade no carrinho
+  // Atualiza item no carrinho
   const updateCartItem = (productId, newQuantity) => {
     if (newQuantity <= 0) {
       removeFromCart(productId);
@@ -92,36 +96,48 @@ export const SalesProvider = ({ children }) => {
     setError(null);
   };
 
-  // Finalizar venda
-  const completeSale = async (paymentMethod) => {
-    if (cart.length === 0) {
+  // Finaliza venda (função corrigida)
+  const completeSale = async (saleData) => {
+    const { items, paymentMethod } = saleData;
+    
+    if (!items || items.length === 0) {
       setError('Adicione produtos ao carrinho antes de finalizar');
       return false;
     }
 
     try {
+      // Prepara dados da venda
       const newSale = {
         date: new Date().toISOString().split('T')[0],
-        items: cart.map(item => ({
-          productId: item.product.id,
-          productName: item.product.name,
-          quantity: item.quantity,
-          price: item.product.price,
-          total: item.product.price * item.quantity
-        })),
+        items: items.map(item => {
+          const product = products.find(p => p.id === item.productId);
+          return {
+            productId: item.productId,
+            productName: product?.name || 'Desconhecido',
+            quantity: item.quantity,
+            price: product?.price || 0,
+            total: (product?.price || 0) * item.quantity
+          };
+        }),
         paymentMethod,
-        total: cart.reduce((sum, item) => sum + (item.product.price * item.quantity), 0),
+        total: items.reduce((sum, item) => {
+          const product = products.find(p => p.id === item.productId);
+          return sum + (product?.price || 0) * item.quantity;
+        }, 0),
         status: 'completed'
       };
 
+      // Gera ID único
       const newId = sales.length > 0 ? Math.max(...sales.map(s => s.id)) + 1 : 1;
       const saleWithId = { ...newSale, id: newId };
 
+      // Atualiza vendas
       setSales(prevSales => [...prevSales, saleWithId]);
 
+      // Atualiza estoque
       setProducts(prevProducts =>
         prevProducts.map(p => {
-          const cartItem = cart.find(item => item.product.id === p.id);
+          const cartItem = items.find(item => item.productId === p.id);
           if (cartItem) {
             return { ...p, stock: p.stock - cartItem.quantity };
           }
@@ -129,7 +145,6 @@ export const SalesProvider = ({ children }) => {
         })
       );
 
-      setCart([]);
       setError(null);
       return true;
     } catch (err) {
@@ -139,7 +154,7 @@ export const SalesProvider = ({ children }) => {
     }
   };
 
-  // Cancelar venda
+  // Cancela venda
   const cancelSale = async (saleId, adminPassword) => {
     try {
       if (adminPassword !== "admin123") {
@@ -155,10 +170,12 @@ export const SalesProvider = ({ children }) => {
         return { success: false, message: 'Venda já foi cancelada anteriormente' };
       }
 
+      // Atualiza vendas
       const updatedSales = sales.map(s =>
         s.id === saleId ? { ...s, status: 'canceled' } : s
       );
 
+      // Restaura estoque
       const updatedProducts = products.map(p => {
         const saleItem = sale.items.find(item => item.productId === p.id);
         if (saleItem) {
@@ -167,6 +184,7 @@ export const SalesProvider = ({ children }) => {
         return p;
       });
 
+      // Registra cancelamento
       const canceledSale = {
         ...sale,
         canceledAt: new Date().toISOString(),
@@ -177,6 +195,7 @@ export const SalesProvider = ({ children }) => {
       setSales(updatedSales);
       setProducts(updatedProducts);
 
+      // Salva em histórico de cancelamentos
       const canceledSales = JSON.parse(localStorage.getItem('canceledSales') || '[]');
       localStorage.setItem('canceledSales', JSON.stringify([...canceledSales, canceledSale]));
 
@@ -186,6 +205,7 @@ export const SalesProvider = ({ children }) => {
     }
   };
 
+  // Provedor de contexto
   return (
     <SalesContext.Provider value={{
       sales,
@@ -197,7 +217,9 @@ export const SalesProvider = ({ children }) => {
       removeFromCart,
       updateCartItem,
       completeSale,
-      cancelSale
+      cancelSale,
+      addProduct,
+      addSale: completeSale // Alias para compatibilidade
     }}>
       {children}
     </SalesContext.Provider>

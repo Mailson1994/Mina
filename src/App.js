@@ -14,14 +14,13 @@ import NewProduct from './pages/NewProduct';
 import CanceledSales from './pages/CanceledSales';
 import './styles/main.css';
 
-// Layout principal que contem sidebar e header
 const MainLayout = () => {
   return (
     <div className="app-container">
       <Sidebar />
       <div className="main-content">
         <Header />
-        <Outlet /> {/* Isso renderizará as rotas aninhadas */}
+        <Outlet />
       </div>
     </div>
   );

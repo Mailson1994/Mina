@@ -1,4 +1,3 @@
-// src/context/AuthContext.js
 import { createContext, useState, useContext, useEffect } from 'react';
 import api from '../api/api';
 
@@ -49,7 +48,6 @@ export function AuthProvider({ children }) {
     localStorage.removeItem('token');
     delete api.defaults.headers.Authorization;
     setUser(null);
-    // Redireciona para login após logout
     window.location.href = '/login';
   };
 

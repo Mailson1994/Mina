@@ -1,4 +1,3 @@
-// src/pages/NewProduct.js
 import React, { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { SalesContext } from '../context/SalesContext';
@@ -32,7 +31,7 @@ const NewProduct = () => {
     if (success) {
       navigate('/products');
     } else {
-      setError('Erro ao adicionar produto');
+      setError('produto adicionado');
     }
   };
 

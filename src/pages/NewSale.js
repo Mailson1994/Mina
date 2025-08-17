@@ -1,16 +1,18 @@
-import React, { useContext } from 'react';
-import { SalesContext } from '../context/SalesContext';
-import AddSaleForm from '../components/AddSaleForm';
-import { useNavigate } from 'react-router-dom';
+import React, { useContext } from "react";
+import { SalesContext } from "../context/SalesContext";
+import AddSaleForm from "../components/AddSaleForm";
+import { useNavigate } from "react-router-dom";
 
 const NewSale = () => {
+  // Contexto e navegação
   const { products, addSale } = useContext(SalesContext);
   const navigate = useNavigate();
 
-  const handleAddSale = async (newSale) => {
-    const success = await addSale(newSale);
+  // Handler para adicionar venda
+  const handleAddSale = async (saleData) => {
+    const success = await addSale(saleData);
     if (success) {
-      navigate('/sales');
+      navigate("/sales");
     }
   };
 
@@ -19,7 +21,7 @@ const NewSale = () => {
       <h2>Nova Venda</h2>
       <AddSaleForm 
         products={products} 
-        onAddSale={handleAddSale} 
+        addSale={handleAddSale}
       />
     </div>
   );
